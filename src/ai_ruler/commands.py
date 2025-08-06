@@ -5,6 +5,7 @@ from .utils import get_rules_dir
 from .config import AI_TOOLS
 from rich.console import Console
 from rich.table import Table
+from iterfzf import iterfzf
 
 console = Console()
 
@@ -48,29 +49,16 @@ def apply():
         console.print("[yellow]No rules found to apply.[/yellow]")
         return
 
-    table = Table(title="Available Rules")
-    table.add_column("N", style="bold magenta")
-    table.add_column("Rule Name", style="cyan")
-    for i, rule in enumerate(rules):
-        table.add_row(str(i + 1), rule)
-    console.print(table)
-
-    rule_num = click.prompt("Select a rule to apply", type=int)
-    if not 1 <= rule_num <= len(rules):
-        console.print("[red]Invalid selection.[/red]")
+    selected_rule = iterfzf(rules, prompt="Select a rule to apply: ")
+    if selected_rule is None:
+        console.print("[yellow]Rule selection cancelled.[/yellow]")
         return
-    selected_rule = rules[rule_num - 1]
 
-    console.print("Supported AI tools:")
     tool_names = list(AI_TOOLS.keys())
-    for i, tool in enumerate(tool_names):
-        console.print(f"{i + 1}. {tool}")
-
-    tool_num = click.prompt("Select an AI tool", type=int)
-    if not 1 <= tool_num <= len(tool_names):
-        console.print("[red]Invalid selection.[/red]")
+    selected_tool = iterfzf(tool_names, prompt="Select an AI tool: ")
+    if selected_tool is None:
+        console.print("[yellow]AI tool selection cancelled.[/yellow]")
         return
-    selected_tool = tool_names[tool_num - 1]
 
     tool_config = AI_TOOLS[selected_tool]
     dest_path = Path(tool_config['path'])
@@ -108,18 +96,10 @@ def delete():
         console.print("[yellow]No rules found to delete.[/yellow]")
         return
 
-    table = Table(title="Available Rules")
-    table.add_column("N", style="bold magenta")
-    table.add_column("Rule Name", style="cyan")
-    for i, rule in enumerate(rules):
-        table.add_row(str(i + 1), rule)
-    console.print(table)
-
-    rule_num = click.prompt("Select a rule to delete", type=int)
-    if not 1 <= rule_num <= len(rules):
-        console.print("[red]Invalid selection.[/red]")
+    selected_rule = iterfzf(rules, prompt="Select a rule to delete: ")
+    if selected_rule is None:
+        console.print("[yellow]Rule selection cancelled.[/yellow]")
         return
-    selected_rule = rules[rule_num - 1]
 
     if click.confirm(f"Are you sure you want to delete ''{selected_rule}''?"):
         rule_path = rules_dir / selected_rule
