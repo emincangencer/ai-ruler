@@ -100,35 +100,39 @@ def apply():
     dest_path = Path(tool_config['path'])
     dest_path.mkdir(parents=True, exist_ok=True)
 
-    # Determine the correct extension based on the selected tool
-    if selected_tool == "roo":
-        target_extension = ".md"
-    elif selected_tool == "cursor":
-        target_extension = ".mdc"
-    else:
-        target_extension = "" # Default or no specific extension for other tools
+    # Start with the filename from tool_config
+    filename = tool_config['filename']
 
-    # Handle filename and extension
-    rule_name_stem = Path(selected_rule).stem
-    rule_name_suffix = Path(selected_rule).suffix
-
-    if target_extension:
-        if rule_name_suffix and rule_name_suffix != target_extension:
-            # Replace existing extension if different
-            filename = f"{rule_name_stem}{target_extension}"
-        elif not rule_name_suffix:
-            # Add extension if none exists
-            filename = f"{rule_name_stem}{target_extension}"
+    # Apply rule_name and extension logic only if '{rule_name}' is in the filename
+    if '{rule_name}' in filename:
+        # Determine the correct extension based on the selected tool
+        if selected_tool == "roo":
+            target_extension = ".md"
+        elif selected_tool == "cursor":
+            target_extension = ".mdc"
         else:
-            # Use existing extension if it matches target
-            filename = selected_rule
-    else:
-        # No specific target extension, use original rule name
-        filename = selected_rule
+            target_extension = "" # Default or no specific extension for other tools
 
-    # If filename is still a format string, format it
-    if '{rule_name}' in tool_config['filename']:
-        filename = tool_config['filename'].format(rule_name=filename)
+        # Handle filename and extension
+        rule_name_stem = Path(selected_rule).stem
+        rule_name_suffix = Path(selected_rule).suffix
+
+        if target_extension:
+            if rule_name_suffix and rule_name_suffix != target_extension:
+                # Replace existing extension if different
+                processed_rule_name = f"{rule_name_stem}{target_extension}"
+            elif not rule_name_suffix:
+                # Add extension if none exists
+                processed_rule_name = f"{rule_name_stem}{target_extension}"
+            else:
+                # Use existing extension if it matches target
+                processed_rule_name = selected_rule
+        else:
+            # No specific target extension, use original rule name
+            processed_rule_name = selected_rule
+
+        # Format the filename with the processed rule name
+        filename = filename.format(rule_name=processed_rule_name)
     
     destination = dest_path / filename
 

@@ -1,6 +1,7 @@
 import pytest
 from click.testing import CliRunner
 from ai_ruler.main import cli
+from ai_ruler.config import AI_TOOLS
 from pathlib import Path
 
 @pytest.fixture
@@ -56,8 +57,9 @@ def test_delete_rule(mock_home):
     # Check that the file no longer exists
     assert not rule_to_delete.exists()
 
-def test_apply_rule(mock_home):
-    """Tests applying a rule.""" 
+@pytest.mark.parametrize("tool_name, tool_config_data", AI_TOOLS.items())
+def test_apply_rule(mock_home, tool_name, tool_config_data):
+    """Tests applying a rule for different AI tools."""
     runner = CliRunner()
     rules_dir = mock_home / ".ai_ruler" / "rules"
     
@@ -68,14 +70,35 @@ def test_apply_rule(mock_home):
     # --- Test apply ---
     # The command is interactive.
     # 1. Select the rule (there's only one, so "1")
-    # 2. Select the tool (Gemini, so "1")
+    # 2. Select the tool dynamically
+    tool_index = list(AI_TOOLS.keys()).index(tool_name) + 1 # +1 because fzf is 1-indexed
+
     with runner.isolated_filesystem() as project_dir:
-        result_apply = runner.invoke(cli, ["apply"], input="1\n1\n")
+        result_apply = runner.invoke(cli, ["apply"], input=f"1\n{tool_index}\n")
 
         assert result_apply.exit_code == 0, result_apply.output
-        assert "Applied rule 'applicable-rule.md' for 'gemini'" in result_apply.output
+        assert "Applied rule 'applicable-rule.md'" in result_apply.output
+        assert f"for '{tool_name}'" in result_apply.output
 
-        # Check that the file was created in the project directory
-        applied_file_path = Path(project_dir) / "GEMINI.md"
+        # Determine expected applied file path
+        if '{rule_name}' in tool_config_data['filename']:
+            # Apply extension logic if filename is a format string
+            rule_name_stem = Path(rule_to_apply.name).stem
+            if tool_name == "roo":
+                expected_filename = f"{rule_name_stem}.md"
+            elif tool_name == "cursor":
+                expected_filename = f"{rule_name_stem}.mdc"
+            else:
+                expected_filename = rule_to_apply.name # Should not happen with current config
+        else:
+            expected_filename = tool_config_data['filename']
+
+        applied_file_path = Path(project_dir) / tool_config_data['path'] / expected_filename
+        
         assert applied_file_path.exists()
-        assert applied_file_path.read_text() == "apply me"
+        expected_content = """---description: applicable-rule.md
+globs:
+alwaysApply: false
+---
+apply me"""
+        assert applied_file_path.read_text() == expected_content
