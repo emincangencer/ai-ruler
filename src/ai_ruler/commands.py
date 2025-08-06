@@ -78,11 +78,24 @@ def apply():
     filename = tool_config['filename'].format(rule_name=selected_rule)
     destination = dest_path / filename
 
-    if destination.exists():
-        if not click.confirm(f"File ''{destination}'' already exists. Overwrite?"):
-            return
-
     source_rule_path = rules_dir / selected_rule
+    if destination.exists():
+        action = click.prompt(f"File ''{destination}'' already exists. Choose an action: (m)erge, (r)ename, (o)verwrite", type=click.Choice(['m', 'r', 'o']))
+        if action == 'm':
+            with open(destination, 'a') as f:
+                f.write("\n")
+                f.write(source_rule_path.read_text())
+            console.print(f"Merged rule ''[bold green]{selected_rule}[/bold green]'' into ''[cyan]{destination}[/cyan]''")
+            return
+        elif action == 'r':
+            new_filename = click.prompt(f"Enter new filename for ''{destination.name}''")
+            destination = dest_path / new_filename
+            if destination.exists():
+                console.print(f"[red]File ''{destination}'' already exists. Aborting.[/red]")
+                return
+        elif action == 'o':
+            if not click.confirm(f"Are you sure you want to overwrite ''{destination}''?"):
+                return
     shutil.copy(source_rule_path, destination)
     console.print(f"Applied rule '[bold green]{selected_rule}[/bold green]' for '[bold blue]{selected_tool}[/bold blue]' at [cyan]{destination}[/cyan]")
 
