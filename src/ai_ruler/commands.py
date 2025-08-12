@@ -27,32 +27,13 @@ def save(source_file, rule_name):
         console.print("[yellow]AI tool selection cancelled. Rule not saved.[/yellow]")
         return
 
-    # Determine the correct extension based on the selected tool
-    if selected_tool == "roo":
-        target_extension = ".md"
-    elif selected_tool == "cursor":
-        target_extension = ".mdc"
-    else:
-        target_extension = "" # Default or no specific extension for other tools
+    tool_config = AI_TOOLS[selected_tool]
+    filename_template = tool_config["filename"]
 
-    # Handle filename and extension for saving
-    rule_name_path = Path(rule_name)
-    rule_name_stem = rule_name_path.stem
-    rule_name_suffix = rule_name_path.suffix
-
-    if target_extension:
-        if rule_name_suffix and rule_name_suffix != target_extension:
-            # Replace existing extension if different
-            final_rule_name = f"{rule_name_stem}{target_extension}"
-        elif not rule_name_suffix:
-            # Add extension if none exists
-            final_rule_name = f"{rule_name_stem}{target_extension}"
-        else:
-            # Use existing extension if it matches target
-            final_rule_name = rule_name
-    else:
-        # No specific target extension, use original rule name
+    if filename_template == "{rule_name}":
         final_rule_name = rule_name
+    else:
+        final_rule_name = filename_template
 
     destination_path = rules_dir / final_rule_name
     if destination_path.exists():
@@ -198,3 +179,4 @@ def delete():
         rule_path = rules_dir / selected_rule
         rule_path.unlink()
         console.print(f"Rule '[bold red]{selected_rule}[/bold red]' deleted.")
+
